@@ -7,7 +7,7 @@
 import pathlib
 import pytest
 
-from import_notebook import import_notebook
+from import_notebook import import_notebook_namespace as import_notebook
 
 
 TESTS_PATH = pathlib.Path(__file__).absolute().parent

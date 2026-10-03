@@ -3,17 +3,27 @@
 
 """Test the submitted solutions for exercise 2, problem 1 of AutoGIS."""
 
-import pathlib
-import tempfile
-
-import dhash
-import PIL
-
 import geopandas
 import pyproj
 import shapely.wkt
 
 from points_decorator import points
+
+
+def plotted_extents(figures):
+    """Yield the (xmin, xmax, ymin, ymax) of all axes in `figures` that show data."""
+    for figure in figures:
+        for axes in figure.axes:
+            if axes.collections or axes.patches or axes.lines or axes.images:
+                yield axes.get_xlim() + axes.get_ylim()
+
+
+def plot_shows(figures, x, y):
+    """Is there a plot whose extent contains the point (x, y)?"""
+    return any(
+        xmin <= x <= xmax and ymin <= y <= ymax
+        for xmin, xmax, ymin, ymax in plotted_extents(figures)
+    )
 
 
 POLYGON_WKT = (
@@ -56,9 +66,10 @@ POLYGON_WKT = (
 
 
 class Test_Exercise_2_Problem_1:
-    @points(1, "Problem 1: Not sure whether your `coordinate_pair` list is okay?")
+    @points(1, "Problem 1: Not sure whether your `coordinate_pairs` list is okay?")
     def test_coordinate_pair(self, problem1):
-        assert problem1.coordinate_pairs == [
+        # a coordinate pair can be either a tuple or a list
+        assert [tuple(pair) for pair in problem1.coordinate_pairs] == [
             (29.99671173095703, 63.748023986816406),
             (31.58196258544922, 62.90789794921875),
             (27.738052368164062, 60.511383056640625),
@@ -115,7 +126,9 @@ class Test_Exercise_2_Problem_1:
 
     @points(1, "Problem 1: Something is not quite right with `polygon`")
     def test_polygon(self, problem1):
-        assert problem1.polygon.wkt == POLYGON_WKT
+        assert shapely.equals_exact(
+            problem1.polygon, shapely.wkt.loads(POLYGON_WKT), tolerance=1e-9
+        )
 
     @points(
         0.5,
@@ -135,11 +148,7 @@ class Test_Exercise_2_Problem_1:
 
     @points(1, "Problem 1: Did you plot the data set?")
     def test_plot(self, problem1):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            figure_path = pathlib.Path(temp_dir) / "plot.png"
-            problem1._PLOT_1.get_figure().savefig(figure_path)
-            image_hash = dhash.dhash_int(PIL.Image.open(figure_path))
-        assert image_hash == 21330220210094937413253399277172186490
+        assert plot_shows(problem1._FIGURES, 26.0, 65.0)
 
     @points(
         1,

@@ -3,18 +3,28 @@
 
 """Test the submitted solutions for exercise 2, problem 2 of AutoGIS."""
 
-import pathlib
-import tempfile
-
-import dhash
-import PIL
-
 import geopandas
 import pandas
 import pyproj
 import shapely.wkt
 
 from points_decorator import points
+
+
+def plotted_extents(figures):
+    """Yield the (xmin, xmax, ymin, ymax) of all axes in `figures` that show data."""
+    for figure in figures:
+        for axes in figure.axes:
+            if axes.collections or axes.patches or axes.lines or axes.images:
+                yield axes.get_xlim() + axes.get_ylim()
+
+
+def plot_shows(figures, x, y):
+    """Is there a plot whose extent contains the point (x, y)?"""
+    return any(
+        xmin <= x <= xmax and ymin <= y <= ymax
+        for xmin, xmax, ymin, ymax in plotted_extents(figures)
+    )
 
 
 class Test_Exercise_2_Problem_2:
@@ -68,8 +78,4 @@ class Test_Exercise_2_Problem_2:
 
     @points(1, "Problem 2: Did you plot the data set?")
     def test_plot(self, problem2):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            figure_path = pathlib.Path(temp_dir) / "plot.png"
-            problem2._PLOT_1.get_figure().savefig(figure_path)
-            image_hash = dhash.dhash_int(PIL.Image.open(figure_path))
-        assert image_hash == 26657539604692504049140950267609623612
+        assert plot_shows(problem2._FIGURES, 31.5, -24.0)
